@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 import sys
 import os
@@ -48,7 +48,7 @@ def main():
 
     # verify that project_dir exists
     if(not os.path.exists(project_dir)):
-        print("ERROR: '{}' does not exist".format(project_dir))
+        print(("ERROR: '{}' does not exist".format(project_dir)))
         return 1
 
     # verify the clang is installed, and infer the correct name for both the C and C++ compilers
@@ -56,7 +56,7 @@ def main():
         cc = args["compiler"] or "clang"
         args["cc"] = subprocess.check_output(["which", cc]).strip()
     except subprocess.CalledProcessError:
-        print("ERROR: Could not find clang at '{}'. Please make sure it is installed and is either in your path, or specified with --compiler.".format(cc))
+        print(("ERROR: Could not find clang at '{}'. Please make sure it is installed and is either in your path, or specified with --compiler.".format(cc)))
         return 1
 
     try:
@@ -64,7 +64,7 @@ def main():
         cxx = os.path.join(h, t.replace("clang", "clang++"))
         args["cxx"] = subprocess.check_output(["which", cxx]).strip()
     except subprocess.CalledProcessError:
-        print("ERROR: Could not find clang++ at '{}'. Please make sure it is installed and specified appropriately.".format(cxx))
+        print(("ERROR: Could not find clang++ at '{}'. Please make sure it is installed and specified appropriately.".format(cxx)))
         return 1
 
     # sanity check - remove this after we add Windows support
@@ -79,7 +79,7 @@ def main():
     }[args["format"] if args["output"] is None else None]
 
     if(os.path.exists(config_file) and not args["force"]):
-        print("'{}' already exists. Overwrite? [y/N] ".format(config_file)),
+        print(("'{}' already exists. Overwrite? [y/N] ".format(config_file)), end=' ')
         response = sys.stdin.readline().strip().lower()
 
         if(response != "y" and response != "yes"):
@@ -102,15 +102,15 @@ def main():
     }[output_format]
 
     # temporary files to hold build logs
-    with tempfile.NamedTemporaryFile(mode="rw") as c_build_log:
-        with tempfile.NamedTemporaryFile(mode="rw") as cxx_build_log:
+    with tempfile.NamedTemporaryFile(mode="r") as c_build_log:
+        with tempfile.NamedTemporaryFile(mode="r") as cxx_build_log:
             # perform the actual compilation of flags
             fake_build(project_dir, c_build_log.name, cxx_build_log.name, **args)
             (c_count, c_skip, c_flags) = parse_flags(c_build_log)
             (cxx_count, cxx_skip, cxx_flags) = parse_flags(cxx_build_log)
 
-            print("Collected {} relevant entries for C compilation ({} discarded).".format(c_count, c_skip))
-            print("Collected {} relevant entries for C++ compilation ({} discarded).".format(cxx_count, cxx_skip))
+            print(("Collected {} relevant entries for C compilation ({} discarded).".format(c_count, c_skip)))
+            print(("Collected {} relevant entries for C++ compilation ({} discarded).".format(cxx_count, cxx_skip)))
 
             # select the language to compile for. If -x was used, zero all other options (so we don't need to repeat the error code)
             if(force_lang == "c"):
@@ -120,7 +120,7 @@ def main():
 
             if(c_count == 0 and cxx_count == 0):
                 print("")
-                print("ERROR: No commands were logged to the build logs (C: {}, C++: {}).".format(c_build_log.name, cxx_build_log.name))
+                print(("ERROR: No commands were logged to the build logs (C: {}, C++: {}).".format(c_build_log.name, cxx_build_log.name)))
                 print("Your build system may not be compatible.")
 
                 if(not args["verbose"]):
@@ -137,7 +137,7 @@ def main():
                 lang, flags = ("c++", cxx_flags)
 
             generate_conf(["-x", lang] + flags, config_file)
-            print("Created {} config file with {} {} flags".format(output_format.upper(), len(flags), lang.upper()))
+            print(("Created {} config file with {} {} flags".format(output_format.upper(), len(flags), lang.upper())))
 
 
 def fake_build(project_dir, c_build_log_path, cxx_build_log_path, verbose, make_cmd, build_system, cc, cxx, out_of_tree, configure_opts, make_flags, preserve_environment, qt_version):
@@ -175,7 +175,7 @@ def fake_build(project_dir, c_build_log_path, cxx_build_log_path, verbose, make_
     else:
         # Preserve HOME, since Cmake needs it to find some packages and it's
         # normally there anyway. See #26.
-        env = dict(map(lambda x: (x, os.environ[x]), ["HOME"]))
+        env = dict([(x, os.environ[x]) for x in ["HOME"]])
 
     env["PATH"]  = "{}:{}".format(fake_path, os.environ["PATH"])
     env["CC"] = "clang"
@@ -200,7 +200,7 @@ def fake_build(project_dir, c_build_log_path, cxx_build_log_path, verbose, make_
 
     # helper function to display exact commands used
     def run(cmd, *args, **kwargs):
-        print("$ " + " ".join(cmd))
+        print(("$ " + " ".join(cmd)))
         subprocess.call(cmd, *args, **kwargs)
 
     if build_system is None:
@@ -231,7 +231,7 @@ def fake_build(project_dir, c_build_log_path, cxx_build_log_path, verbose, make_
         else:
             cache_tmp = None
 
-        print("Running cmake in '{}'...".format(build_dir))
+        print(("Running cmake in '{}'...".format(build_dir)))
         sys.stdout.flush()
         run(["cmake", project_dir] + configure_opts, env=env_config, **proc_opts)
 
@@ -254,7 +254,7 @@ def fake_build(project_dir, c_build_log_path, cxx_build_log_path, verbose, make_
         if(out_of_tree):
             build_dir = tempfile.mkdtemp()
             proc_opts["cwd"] = build_dir
-            print("Configuring autotools in '{}'...".format(build_dir))
+            print(("Configuring autotools in '{}'...".format(build_dir)))
         else:
             print("Configuring autotools...")
 
@@ -275,8 +275,8 @@ def fake_build(project_dir, c_build_log_path, cxx_build_log_path, verbose, make_
         # qmake
         # make sure there is only one .pro file
         if len(pro_files) != 1:
-            print("ERROR: Found {} .pro files (expected one): {}.".format(
-                len(pro_files), ', '.join(pro_files)))
+            print(("ERROR: Found {} .pro files (expected one): {}.".format(
+                len(pro_files), ', '.join(pro_files))))
             sys.exit(1)
 
         # run qmake in a temporary directory, then compile the project as usual
@@ -294,7 +294,7 @@ def fake_build(project_dir, c_build_log_path, cxx_build_log_path, verbose, make_
             ("FreeBSD", False): "unsupported/freebsd-clang",
         }[(os.uname()[0], qt_version == "4")]
 
-        print("Running qmake in '{}' with Qt {}...".format(build_dir, qt_version))
+        print(("Running qmake in '{}' with Qt {}...".format(build_dir, qt_version)))
         run(["qmake"] + configure_opts + [pro_files[0]], env=env_config,
             **proc_opts)
 
@@ -334,7 +334,7 @@ def fake_build(project_dir, c_build_log_path, cxx_build_log_path, verbose, make_
         print("ERROR: Unknown build system")
         sys.exit(2)
 
-    print("Build completed in {} sec".format(round(time.time() - started, 2)))
+    print(("Build completed in {} sec".format(round(time.time() - started, 2))))
     print("")
 
 
@@ -401,7 +401,7 @@ def parse_flags(build_log):
     # Only specify one word size (the largest)
     # (Different sizes are used for different files in the linux kernel.)
     mRegex = re.compile("^-m[0-9]+$")
-    word_flags = list([f for f in flags if isinstance(f, basestring) and mRegex.match(f)])
+    word_flags = list([f for f in flags if isinstance(f, str) and mRegex.match(f)])
 
     if(len(word_flags) > 1):
         for flag in word_flags:
@@ -410,9 +410,9 @@ def parse_flags(build_log):
         flags.add(max(word_flags))
 
     # Resolve duplicate macro definitions (always choose the last value for consistency)
-    for name, values in define_flags.iteritems():
+    for name, values in define_flags.items():
         if(len(values) > 1):
-            print("WARNING: {} distinct definitions of macro {} found".format(len(values), name))
+            print(("WARNING: {} distinct definitions of macro {} found".format(len(values), name)))
             values.sort()
 
         flags.add("-D{}={}".format(name, values[0]))
@@ -428,7 +428,7 @@ def generate_cc_conf(flags, config_file):
 
     with open(config_file, "w") as output:
         for flag in flags:
-            if(isinstance(flag, basestring)):
+            if(isinstance(flag, str)):
                 output.write(flag + "\n")
             else: # is tuple
                 for f in flag:
@@ -451,7 +451,7 @@ def generate_ycm_conf(flags, config_file):
                 if(line == "    # INSERT FLAGS HERE\n"):
                     # insert generated code
                     for flag in flags:
-                        if(isinstance(flag, basestring)):
+                        if(isinstance(flag, str)):
                             output.write("    '{}',\n".format(flag))
                         else: # is tuple
                             output.write("    '{}', '{}',\n".format(*flag))
